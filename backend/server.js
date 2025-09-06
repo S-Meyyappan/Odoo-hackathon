@@ -78,37 +78,61 @@ app.post("/login",async(req,res)=>{
   }
 })
 
-//adding task
-app.post("/addtasks", async(req,res)=>{
-  try{
-    const taskData=new task({
-      taskName:req.body.taskName,
-      taskAssignee:req.body.taskAssignee,
-      projectName:req.body.projectName,
-      taskTags:req.body.taskTags,
-      deadline:req.body.deadline,
-      image:req.body.image,
-      description:req.body.description
-    })
-    await taskData.save()
-    console.log("Task added");
-  }
-  catch(err){
-    return res.status(500).json({message:"Unable to add task",error:err});
+// Get users by role (employee or manager)
+app.get("/users", async (req, res) => {
+  try {
+    const role = req.query.role; // ?role=employee or ?role=manager
+
+    if (!role || !["employee", "manager"].includes(role.toLowerCase())) {
+      return res.status(400).json({ message: "Invalid or missing role query parameter" });
     }
+
+    const users = await User.find({ role: role.toLowerCase() }).select("username"); 
+    res.json(users);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Unable to fetch users", error: err });
+  }
 });
 
-//getting tasks
-app.get("/gettasks",async(req,res)=>{
-    try{
-      const getdata=await task.find();
-      res.json(getdata);
-      console.log("Tasks fetched");
+// add task
+app.post("/tasks", async (req, res) => {
+  try {
+    const project = await projects.findById(req.body.projectId);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
     }
-    catch(err){
-      return res.status(500).json({message:"Unable to fetch tasks",error:err});
-    }
+
+    const taskData = new task({
+      taskName: req.body.taskName,
+      taskAssignee: req.body.taskAssignee,
+      projectId: req.body.projectId,  // link to project
+      taskTags: req.body.taskTags,
+      deadline: req.body.deadline,
+      image: req.body.image,
+      description: req.body.description,
+    });
+
+    await taskData.save();
+    res.json(taskData);
+    console.log("Task added");
+  } catch (err) {
+    return res.status(500).json({ message: "Unable to add task", error: err });
+  }
 });
+
+// get tasks for a specific project
+app.get("/projects/:id/tasks", async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const tasksList = await task.find({ projectId });
+    res.json(tasksList);
+  } catch (err) {
+    return res.status(500).json({ message: "Unable to fetch tasks", error: err });
+  }
+});
+
 
 //update tasks
 app.put("/updatetasks/:id",async(req,res)=>{
@@ -155,9 +179,11 @@ app.post("/addprojects", async(req,res)=>{
       tasks:req.body.tasks
     })
     await proData.save()
+    res.status(201).json(proData);
     console.log("Project added");
   }
   catch(err){
+    console.error(err);
     return res.status(500).json({message:"Unable to add project",error:err});
   }
 });
