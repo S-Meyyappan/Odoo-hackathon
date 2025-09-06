@@ -9,8 +9,10 @@ import Tags from "../components/tags";
 const API_URL = import.meta.env.VITE_API_URL;
 
 function TaskForm() {
-  const [searchParams] = useSearchParams();
-  const projectId = searchParams.get("projectId") || "";
+
+    const [searchParams] = useSearchParams();
+    const projectId = searchParams.get("projectId");
+    const projectName = searchParams.get("projectName");
 
   const [formData, setFormData] = useState({
     taskName: "",
@@ -79,7 +81,6 @@ function TaskForm() {
 
     const payload = {
       ...formData,
-      taskAssignees: assignees,
       taskTags: tagValues,
       image: imageBase64,
     };
@@ -88,120 +89,161 @@ function TaskForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Task Name */}
-      <input
-        type="text"
-        name="taskName"
-        placeholder="Task Name"
-        value={formData.taskName}
-        onChange={handleChange}
-        required
-        className="w-full rounded-md border px-3 py-2"
-      />
+    <form
+  onSubmit={handleSubmit}
+  className="max-w-3xl mx-auto p-6 bg-gray-900 rounded-xl shadow-md space-y-6"
+>
+  {/* Task Name */}
+  <div>
+    <label className="block text-sm font-medium text-gray-300 mb-1">
+      Task Name
+    </label>
+    <input
+      type="text"
+      name="taskName"
+      placeholder="Enter task name"
+      value={formData.taskName}
+      onChange={handleChange}
+      required
+      className="w-full rounded-md border border-gray-700 bg-gray-800 text-white px-3 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+  </div>
 
-      {/* Task Assignees Listbox (multi-select) */}
-      <div>
-        <Listbox
-          value={selectedEmployees}
-          onChange={(emps) => {
-            setSelectedEmployees(emps);
-          }}
-          multiple
-        >
-          <div className="relative mt-1">
-            <Listbox.Button className="w-full cursor-default rounded-md bg-gray-700 text-white py-2 px-3 text-left focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <span className="block truncate">
-                {selectedEmployees.length > 0
-                  ? selectedEmployees.map((e) => e.username).join(", ")
-                  : "Select Employees"}
-              </span>
-            </Listbox.Button>
+  {/* Task Assignees */}
+  <div>
+    <label className="block text-sm font-medium text-gray-300 mb-1">
+      Assign Employees
+    </label>
+    <Listbox
+      value={selectedEmployees}
+      onChange={(emps) => {
+            setSelectedEmployees(emps); // for UI
+            setFormData((prev) => ({
+            ...prev,
+            taskAssignees: emps.map((emp) => emp.username), // update array of strings
+        }));
+     }}
+      multiple
+    >
+      <div className="relative">
+        <Listbox.Button className="w-full cursor-pointer rounded-md bg-gray-800 text-white py-2 px-3 text-left focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <span className="block truncate">
+            {selectedEmployees.length > 0
+              ? selectedEmployees.map((e) => e.username).join(", ")
+              : "Select Employees"}
+          </span>
+        </Listbox.Button>
 
-            <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-gray-700 py-1 shadow-lg ring-1 ring-black/20">
-              {employees.map((emp) => (
-                <Listbox.Option
-                  key={emp._id}
-                  value={emp}
-                  className={({ active }) =>
-                    `relative cursor-pointer select-none py-2 pl-3 pr-9 ${
-                      active ? "bg-blue-500 text-white" : "text-white"
-                    }`
-                  }
-                >
-                  {({ selected }) => (
-                    <>
-                      <span
-                        className={`block truncate ${
-                          selected ? "font-semibold text-blue-400" : "font-normal"
-                        }`}
-                      >
-                        {emp.username}
-                      </span>
-                      {selected && (
-                        <span className="absolute inset-y-0 right-0 flex items-center pr-4">
-                          <CheckIcon className="h-5 w-5 text-blue-400" aria-hidden="true" />
-                        </span>
-                      )}
-                    </>
+        <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-gray-800 shadow-lg ring-1 ring-black/20 focus:outline-none z-10">
+          {employees.map((emp) => (
+            <Listbox.Option
+              key={emp._id}
+              value={emp}
+              className={({ active }) =>
+                `relative cursor-pointer select-none py-2 pl-3 pr-9 ${
+                  active ? "bg-blue-500 text-white" : "text-gray-200"
+                }`
+              }
+            >
+              {({ selected }) => (
+                <>
+                  <span
+                    className={`block truncate ${
+                      selected ? "font-semibold text-blue-400" : "font-normal"
+                    }`}
+                  >
+                    {emp.username}
+                  </span>
+                  {selected && (
+                    <span className="absolute inset-y-0 right-0 flex items-center pr-4">
+                      <CheckIcon
+                        className="h-5 w-5 text-blue-400"
+                        aria-hidden="true"
+                      />
+                    </span>
                   )}
-                </Listbox.Option>
-              ))}
-            </Listbox.Options>
-          </div>
-        </Listbox>
+                </>
+              )}
+            </Listbox.Option>
+          ))}
+        </Listbox.Options>
       </div>
+    </Listbox>
+  </div>
 
-      {/* Project ID (readonly) */}
-      <input type="text" name="projectId" value={projectId} readOnly className="hidden" />
+  {/* Project Name (hidden) */}
+  <input type="text" name="projectName" value={projectName} readOnly className="hidden" />
 
-      {/* Task Tags */}
-      <Tags
-        name="taskTags"
-        placeholder="Add task tags..."
-        onChange={(newTags) =>
-          setFormData((prev) => ({ ...prev, taskTags: newTags || [] }))
-        }
-      />
+  {/* Task Tags */}
+  <div>
+    <label className="block text-sm font-medium text-gray-300 mb-1">
+      Tags
+    </label>
+    <Tags
+      name="taskTags"
+      placeholder="Add tags..."
+      onChange={(newTags) =>
+        setFormData((prev) => ({ ...prev, taskTags: newTags || [] }))
+      }
+    />
+  </div>
 
-      {/* Deadline */}
-      <input
-        type="date"
-        name="deadline"
-        value={formData.deadline}
-        onChange={handleChange}
-        required
-        className="w-full rounded-md border px-3 py-2"
-      />
+  {/* Deadline */}
+  <div>
+    <label className="block text-sm font-medium text-gray-300 mb-1">
+      Deadline
+    </label>
+    <input
+      type="date"
+      name="deadline"
+      value={formData.deadline}
+      onChange={handleChange}
+      required
+      className="w-full rounded-md border border-gray-700 bg-gray-800 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+  </div>
 
-      {/* Image */}
-      <input
-        type="file"
-        name="image"
-        accept="image/*"
-        onChange={handleChange}
-        required
-      />
+  {/* Image Upload */}
+  <div>
+    <label className="block text-sm font-medium text-gray-300 mb-1">
+      Upload Image
+    </label>
+    <input
+      type="file"
+      name="image"
+      accept="image/*"
+      onChange={handleChange}
+      required
+      className="w-full text-gray-200 file:bg-gray-700 file:text-white file:px-3 file:py-2 file:rounded-md file:border-none focus:outline-none"
+    />
+  </div>
 
-      {/* Description */}
-      <textarea
-        name="description"
-        placeholder="Task Description"
-        value={formData.description}
-        onChange={handleChange}
-        required
-        className="w-full rounded-md border px-3 py-2"
-      ></textarea>
+  {/* Description */}
+  <div>
+    <label className="block text-sm font-medium text-gray-300 mb-1">
+      Description
+    </label>
+    <textarea
+      name="description"
+      placeholder="Enter task description"
+      value={formData.description}
+      onChange={handleChange}
+      required
+      className="w-full rounded-md border border-gray-700 bg-gray-800 text-white px-3 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+      rows={4}
+    />
+  </div>
 
-      {/* Submit */}
-      <button
-        type="submit"
-        disabled={mutation.isLoading}
-        className="rounded-md bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
-      >
-        {mutation.isLoading ? "Creating..." : "Create Task"}
-      </button>
-    </form>
+  {/* Submit */}
+  <button
+    type="submit"
+    disabled={mutation.isLoading}
+    className="w-full rounded-md bg-blue-600 hover:bg-blue-700 transition-colors text-white px-4 py-2 font-medium disabled:opacity-50"
+  >
+    {mutation.isLoading ? "Creating..." : "Create Task"}
+  </button>
+</form>
+
   );
 }
 

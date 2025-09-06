@@ -32,7 +32,7 @@ function ProjectForm() {
         const res = await axios.get(`${API_URL}/users?role=manager`);
         setManagers(res.data);
         if (res.data.length > 0) {
-          setSelectedManager(res.data);
+          setSelectedManager(res.data[0]);
           setFormData((prev) => ({ ...prev, projectManager: res.data.username }));
         }
       } catch (err) {
@@ -64,8 +64,7 @@ function ProjectForm() {
       return res.data;
     },
     onSuccess: (newProject) => {
-    
-      navigate(`/task?projectId=${newProject._id}`);
+      navigate(`/task?projectId=${newProject._id}&projectName=${encodeURIComponent(newProject.projectName)}`);
     },
   });
 
@@ -76,6 +75,10 @@ function ProjectForm() {
       imageBase64 = await fileToBase64(formData.image);
     }
 
+    if (!formData.projectManager) {
+        return alert("Please select a project manager!");
+    }
+    
     const tagValues = Array.isArray(formData.projectTags)
       ? formData.projectTags.map((tag) => tag.value || tag)
       : [];
@@ -85,8 +88,10 @@ function ProjectForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Project Name */}
+    <form
+      onSubmit={handleSubmit}
+      className="max-w-3xl mx-auto p-6 bg-gray-900 rounded-xl shadow-md space-y-6"
+    >
       <input
         type="text"
         name="projectName"
@@ -94,10 +99,9 @@ function ProjectForm() {
         value={formData.projectName}
         onChange={handleChange}
         required
-        className="w-full rounded-md border px-3 py-2"
+        className="w-full rounded-md border border-gray-700 bg-gray-800 text-white px-3 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
 
-      {/* Project Tags */}
       <Tags
         name="projectTags"
         placeholder="Add tags..."
@@ -106,69 +110,68 @@ function ProjectForm() {
         }
       />
 
-      {/* Project Manager Listbox */}
-      <div>
-        <Listbox
-          value={selectedManager}
-          onChange={(manager) => {
+      {/* Manager Listbox */}
+      <Listbox
+        value={selectedManager}
+        onChange={(manager) => {
             setSelectedManager(manager);
             setFormData((prev) => ({ ...prev, projectManager: manager.username }));
-          }}
-        >
-          <div className="relative mt-1">
-            <Listbox.Button className="w-full cursor-default rounded-md bg-gray-700 text-white py-2 px-3 text-left focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <span className="block truncate">
-                {selectedManager ? selectedManager.username : "Select Manager"}
-              </span>
-            </Listbox.Button>
-            <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-gray-700 py-1 shadow-lg ring-1 ring-black/20">
-              {managers.map((manager) => (
-                <Listbox.Option
-                  key={manager._id}
-                  value={manager}
-                  className={({ active }) =>
-                    `relative cursor-pointer select-none py-2 pl-3 pr-9 ${
-                      active ? "bg-blue-500 text-white" : "text-white"
-                    }`
-                  }
-                >
-                  {({ selected }) => (
-                    <>
-                      <span
-                        className={`block truncate ${
-                          selected ? "font-semibold text-blue-400" : "font-normal"
-                        }`}
-                      >
-                        {manager.username}
+        }}
+      >
+        <div className="relative mt-1">
+          <Listbox.Button className="w-full cursor-pointer rounded-md bg-gray-800 text-white py-2 px-3 text-left focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <span className="block truncate">
+              {selectedManager ? selectedManager.username : "Select Manager"}
+            </span>
+          </Listbox.Button>
+          <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-gray-800 shadow-lg ring-1 ring-black/20 z-10">
+            {managers.map((manager) => (
+              <Listbox.Option
+                key={manager._id}
+                value={manager}
+                className={({ active }) =>
+                  `relative cursor-pointer select-none py-2 pl-3 pr-9 ${
+                    active ? "bg-blue-500 text-white" : "text-gray-200"
+                  }`
+                }
+              >
+                {({ selected }) => (
+                  <>
+                    <span
+                      className={`block truncate ${
+                        selected ? "font-semibold text-blue-400" : "font-normal"
+                      }`}
+                    >
+                      {manager.username}
+                    </span>
+                    {selected && (
+                      <span className="absolute inset-y-0 right-0 flex items-center pr-4">
+                        <CheckIcon
+                          className="h-5 w-5 text-blue-400"
+                          aria-hidden="true"
+                        />
                       </span>
-                      {selected && (
-                        <span className="absolute inset-y-0 right-0 flex items-center pr-4">
-                          <CheckIcon className="h-5 w-5 text-blue-400" aria-hidden="true" />
-                        </span>
-                      )}
-                    </>
-                  )}
-                </Listbox.Option>
-              ))}
-            </Listbox.Options>
-          </div>
-        </Listbox>
-      </div>
+                    )}
+                  </>
+                )}
+              </Listbox.Option>
+            ))}
+          </Listbox.Options>
+        </div>
+      </Listbox>
 
-      {/* Deadline */}
       <input
         type="date"
         name="deadline"
         value={formData.deadline}
         onChange={handleChange}
         required
-        className="w-full rounded-md border px-3 py-2"
+        className="w-full rounded-md border border-gray-700 bg-gray-800 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
 
-      {/* Priority */}
       <div className="flex gap-4">
         {["low", "medium", "high"].map((level) => (
-          <label key={level} className="flex items-center gap-1">
+          <label key={level} className="flex items-center gap-1 text-gray-300">
             <input
               type="radio"
               name="priority"
@@ -181,30 +184,29 @@ function ProjectForm() {
         ))}
       </div>
 
-      {/* Image */}
       <input
         type="file"
         name="image"
         accept="image/*"
         onChange={handleChange}
         required
+        className="w-full text-gray-200 file:bg-gray-700 file:text-white file:px-3 file:py-2 file:rounded-md file:border-none focus:outline-none"
       />
 
-      {/* Description */}
       <textarea
         name="description"
         placeholder="Project Description"
         value={formData.description}
         onChange={handleChange}
         required
-        className="w-full rounded-md border px-3 py-2"
-      ></textarea>
+        className="w-full rounded-md border border-gray-700 bg-gray-800 text-white px-3 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        rows={4}
+      />
 
-      {/* Submit */}
       <button
         type="submit"
         disabled={mutation.isLoading}
-        className="rounded-md bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
+        className="w-full rounded-md bg-blue-600 hover:bg-blue-700 transition-colors text-white px-4 py-2 font-medium disabled:opacity-50"
       >
         {mutation.isLoading ? "Creating..." : "Create Project"}
       </button>

@@ -118,6 +118,7 @@ app.post("/tasks", async (req, res) => {
     res.json(taskData);
     console.log("Task added");
   } catch (err) {
+    console.error(err);
     return res.status(500).json({ message: "Unable to add task", error: err });
   }
 });
