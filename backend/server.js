@@ -6,6 +6,8 @@ import bcrypt from "bcrypt"
 
 import connectDb from "./db.js"
 import User from "./models/userSchema.js"
+import task from "./models/taskSchema.js";
+import projects from "./models/projectSchema.js";
 
 
 dotenv.config()
@@ -76,8 +78,130 @@ app.post("/login",async(req,res)=>{
   }
 })
 
-app.get("/",(req,res)=>{
-    res.send("Hello !")
+//adding task
+app.post("/addtasks", async(req,res)=>{
+  try{
+    const taskData=new task({
+      taskName:req.body.taskName,
+      taskAssignee:req.body.taskAssignee,
+      projectName:req.body.projectName,
+      taskTags:req.body.taskTags,
+      deadline:req.body.deadline,
+      image:req.body.image,
+      description:req.body.description
+    })
+    await taskData.save()
+    console.log("Task added");
+  }
+  catch(err){
+    return res.status(500).json({message:"Unable to add task",error:err});
+    }
+});
+
+//getting tasks
+app.get("/gettasks",async(req,res)=>{
+    try{
+      const getdata=await task.find();
+      res.json(getdata);
+      console.log("Tasks fetched");
+    }
+    catch(err){
+      return res.status(500).json({message:"Unable to fetch tasks",error:err});
+    }
+});
+
+//update tasks
+app.put("/updatetasks/:id",async(req,res)=>{
+  try{
+    const id=req.params.id;
+    const updatedDate= await task.findByIdAndUpdate(id)
+    res.json(updatedDate)
+    console.log("Task updated");
+  }
+  catch(err){
+    return res.status(500).json({message:"Unable to update task",error:err});
+  }
+})
+
+//delete tasks
+app.delete("/deletetasks/:id",async(req,res)=>{
+  try{
+    const id=req.params.id;
+    const deletedData=await task.findByIdAndDelete(id)
+    if(!deletedData)
+    {
+      return res.status(404).json({message:"Task not found"});
+    }
+    res.json({message:"Task deleted successfully"});
+    console.log("Task deleted");
+  }
+  catch(err)
+  {
+    return res.status(500).json({message:"unable to delete task",error:err});
+  }
+})
+
+//adding projects
+app.post("/addprojects", async(req,res)=>{
+  try{
+    const proData=new projects({
+      projectName:req.body.projectName,
+      projectManager:req.body.projectManager,
+      teamMembers:req.body.teamMembers,
+      projectTags:req.body.projectTags,
+      deadline:req.body.deadline,
+      image:req.body.image,
+      description:req.body.description,
+      tasks:req.body.tasks
+    })
+    await proData.save()
+    console.log("Project added");
+  }
+  catch(err){
+    return res.status(500).json({message:"Unable to add project",error:err});
+  }
+});
+
+//getting projects
+app.get("/getprojects",async(req,res)=>{
+  try{
+    const getData =await projects.find();
+    res.json(getData);
+    console.log("Projects fetched");
+  }
+  catch(err){
+    return res.status(500).json({message:"Unable to fetch projects",error:err});
+  }
+
+});
+
+//update projects
+app.put("/updateprojects/:id",async(req,res)=>{
+  try{
+    const id =req.params.id;
+    const updatedData=await projects.findByIdAndUpdate(id);
+    res.json(updatedData);
+    console.log("Project updated");
+    }
+    catch(err){
+      return res.status(500).json({message:"Unable to update project",error:err});
+    }
+});
+
+//delete projects
+app.delete("/deleteprojects/:id",async(req,res)=>{
+  try{
+    const id=req.params.id;
+    const deletedData=await projects.findByIdAndDelete(id);
+    if(!deletedData)
+    {
+      return res.status(404).json({message:"projects not found"});
+    }
+  }
+  catch(err)
+  {
+    return res.status(500).json({message:"unable to delete project",error:err});
+  }
 })
 
 //server start
